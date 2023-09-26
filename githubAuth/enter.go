@@ -79,7 +79,8 @@ func (that *GithubAuth) GetUserEmails(accessToken string) ([]string, error) {
 	}
 
 	var emailStruct []struct {
-		Email string `json:"email"`
+		Email   string `json:"email"`
+		Primary bool   `json:"primary"`
 	}
 
 	err = sonic.Unmarshal(resp.Bytes(), &emailStruct)
@@ -88,8 +89,15 @@ func (that *GithubAuth) GetUserEmails(accessToken string) ([]string, error) {
 	}
 
 	emails := make([]string, len(emailStruct))
-	for i, v := range emailStruct {
-		emails[i] = v.Email
+	index := len(emailStruct) - 1
+	// 将主邮箱放在第一位，其他邮箱放在后面
+	for _, email := range emailStruct {
+		if email.Primary {
+			emails[0] = email.Email
+		} else {
+			emails[index] = email.Email
+			index--
+		}
 	}
 
 	return emails, nil
