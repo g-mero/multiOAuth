@@ -8,6 +8,7 @@ package githubAuth
 import (
 	"errors"
 	"github.com/bytedance/sonic"
+	"github.com/g-mero/multiOAuth"
 	"github.com/imroc/req/v3"
 )
 
@@ -23,7 +24,10 @@ var (
 	apiUserEmails  = "https://api.github.com/user/emails"
 )
 
-func NewGithubAuth(clientID, clientSecret string) *GithubAuth {
+func NewGithubAuth(clientID, clientSecret string, devMode ...bool) *GithubAuth {
+	if len(devMode) > 0 && devMode[0] {
+		client = req.C().SetCommonHeader("Accept", "application/json").DevMode()
+	}
 	return &GithubAuth{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
@@ -53,6 +57,7 @@ func (that *GithubAuth) GetAccessToken(code string) (string, error) {
 	return accessToken, err
 }
 
+// GetUserInfo get user info RawData
 func (that *GithubAuth) GetUserInfo(accessToken string) ([]byte, error) {
 	resp, err := client.R().
 		SetHeader("Authorization", "Bearer "+accessToken).
@@ -66,6 +71,37 @@ func (that *GithubAuth) GetUserInfo(accessToken string) ([]byte, error) {
 	}
 
 	return resp.Bytes(), nil
+}
+
+// GetCommonUserInfo get user info
+func (that *GithubAuth) GetCommonUserInfo(accessToken string) (multiOAuth.CommonUserInfo, error) {
+	var userInfo multiOAuth.CommonUserInfo
+	rawData, err := that.GetUserInfo(accessToken)
+	if err != nil {
+		return userInfo, err
+	}
+
+	root, err := sonic.Get(rawData)
+	if err != nil {
+		return userInfo, err
+	}
+
+	userInfo.Username, err = root.Get("login").String()
+	if err != nil {
+		return userInfo, err
+	}
+
+	userInfo.UniqueID, err = root.Get("id").String()
+	if err != nil {
+		return userInfo, err
+	}
+
+	emails, err := that.GetUserEmails(accessToken)
+	if err != nil {
+		return userInfo, err
+	}
+	userInfo.Email = emails[0]
+	return userInfo, nil
 }
 
 // GetUserEmails get user emails
