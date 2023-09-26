@@ -8,6 +8,7 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/g-mero/multiOAuth"
 	"github.com/imroc/req/v3"
+	"net/url"
 )
 
 type GiteeAuth struct {
@@ -119,4 +120,13 @@ func (that *GiteeAuth) GetUserEmails(accessToken string) ([]string, error) {
 	}
 
 	return emails, nil
+}
+
+// MakeAuthUrl make auth url
+func (that *GiteeAuth) MakeAuthUrl(redirectUri string) string {
+	queryParams := url.Values{}
+	queryParams.Add("client_id", that.ClientID)
+	queryParams.Add("redirect_uri", redirectUri)
+	queryParams.Add("response_type", "code")
+	return "https://gitee.com/oauth/authorize?" + queryParams.Encode()
 }

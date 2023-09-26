@@ -10,6 +10,7 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/g-mero/multiOAuth"
 	"github.com/imroc/req/v3"
+	"net/url"
 )
 
 type GithubAuth struct {
@@ -137,4 +138,14 @@ func (that *GithubAuth) GetUserEmails(accessToken string) ([]string, error) {
 	}
 
 	return emails, nil
+}
+
+// MakeAuthUrl make auth url
+func (that *GithubAuth) MakeAuthUrl(redirectUri string) string {
+	queryParams := url.Values{}
+	queryParams.Add("client_id", that.ClientID)
+	queryParams.Add("redirect_uri", redirectUri)
+	queryParams.Add("scope", "user:email")
+
+	return "https://github.com/login/oauth/authorize?" + queryParams.Encode()
 }
